@@ -52,12 +52,13 @@ func AddToInventory(c *fiber.Ctx) error {
 	}
 	newProduct.ID = product.InsertedID.(primitive.ObjectID)
 	storeId, _ := helpers.GetStoreIdFromInventory(inventoryId)
-	logProduct := models.Log{
-		Action:  "add",
-		Type:    "product",
-		Payload: newProduct,
-		Date:    primitive.NewDateTimeFromTime(time.Now()),
-		StoreId: storeId,
+	logProduct := models.ProductLog{
+		Action:      "add",
+		Type:        "product",
+		Payload:     newProduct,
+		Date:        primitive.NewDateTimeFromTime(time.Now()),
+		StoreId:     storeId,
+		InventoryId: inventoryId,
 	}
 	_ = helpers.SaveLog(logProduct)
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
@@ -157,12 +158,17 @@ func UpdateProduct(c *fiber.Ctx) error {
 	}
 	product, _ := helpers.GetProductById(_id)
 	storeId, _ := helpers.GetStoreIdFromInventory(product.InventoryID)
-	logProduct := models.Log{
-		Action:  "update",
-		Type:    "product",
-		Payload: payload,
-		Date:    primitive.NewDateTimeFromTime(time.Now()),
-		StoreId: storeId,
+	logPayload := map[string]interface{}{
+		"old": product,
+		"new": updatedValues,
+	}
+	logProduct := models.ProductLog{
+		Action:      "update",
+		Type:        "product",
+		Payload:     logPayload,
+		Date:        primitive.NewDateTimeFromTime(time.Now()),
+		StoreId:     storeId,
+		InventoryId: product.InventoryID,
 	}
 	_ = helpers.SaveLog(logProduct)
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
@@ -188,12 +194,13 @@ func DeleteProduct(c *fiber.Ctx) error {
 		})
 	}
 	storeId, _ := helpers.GetStoreIdFromInventory(product.InventoryID)
-	logProduct := models.Log{
-		Action:  "delete",
-		Type:    "product",
-		Payload: product,
-		Date:    primitive.NewDateTimeFromTime(time.Now()),
-		StoreId: storeId,
+	logProduct := models.ProductLog{
+		Action:      "delete",
+		Type:        "product",
+		Payload:     product,
+		Date:        primitive.NewDateTimeFromTime(time.Now()),
+		StoreId:     storeId,
+		InventoryId: product.InventoryID,
 	}
 	_ = helpers.SaveLog(logProduct)
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
