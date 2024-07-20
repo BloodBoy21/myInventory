@@ -51,6 +51,15 @@ func AddToInventory(c *fiber.Ctx) error {
 		})
 	}
 	newProduct.ID = product.InsertedID.(primitive.ObjectID)
+	storeId, _ := helpers.GetStoreIdFromInventory(inventoryId)
+	logProduct := models.Log{
+		Action:  "add",
+		Type:    "product",
+		Payload: newProduct,
+		Date:    primitive.NewDateTimeFromTime(time.Now()),
+		StoreId: storeId,
+	}
+	_ = helpers.SaveLog(logProduct)
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"success": true,
 		"data":    newProduct,
@@ -124,22 +133,21 @@ func UpdateProduct(c *fiber.Ctx) error {
 			"message": "Invalid request",
 		})
 	}
+	updatedValues, err := helpers.UpdateProductDataStruct(payload, _id)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"success": false,
+			"message": err.Error(),
+		})
+
+	}
 	update := bson.D{
 		{
 			"$set",
-			bson.D{{
-				"name", payload.Name,
-			}, {
-				"description", payload.Description,
-			}, {
-				"quantity", payload.Quantity,
-			}, {
-				"price", payload.Price,
-			}, {
-				"updated_at", time.Now().Format(time.RFC3339),
-			}},
+			updatedValues,
 		},
 	}
+	log.Println(update)
 	updatedProduct, err := productCollection.UpdateOne(c.Context(), bson.D{{"_id", _id}}, update)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -147,6 +155,16 @@ func UpdateProduct(c *fiber.Ctx) error {
 			"message": err.Error(),
 		})
 	}
+	product, _ := helpers.GetProductById(_id)
+	storeId, _ := helpers.GetStoreIdFromInventory(product.InventoryID)
+	logProduct := models.Log{
+		Action:  "update",
+		Type:    "product",
+		Payload: payload,
+		Date:    primitive.NewDateTimeFromTime(time.Now()),
+		StoreId: storeId,
+	}
+	_ = helpers.SaveLog(logProduct)
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"success": true,
 		"data":    updatedProduct,
@@ -169,6 +187,15 @@ func DeleteProduct(c *fiber.Ctx) error {
 			"message": err.Error(),
 		})
 	}
+	storeId, _ := helpers.GetStoreIdFromInventory(product.InventoryID)
+	logProduct := models.Log{
+		Action:  "delete",
+		Type:    "product",
+		Payload: product,
+		Date:    primitive.NewDateTimeFromTime(time.Now()),
+		StoreId: storeId,
+	}
+	_ = helpers.SaveLog(logProduct)
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"success": true,
 		"data": fiber.Map{
@@ -178,7 +205,8 @@ func DeleteProduct(c *fiber.Ctx) error {
 }
 
 func CreateInventory(c *fiber.Ctx) error {
-	storeId := c.Params("store_id")
+	_storeId := c.Params("store_id")
+	storeId, err := strconv.ParseUint(_storeId, 10, 64)
 	var payload models.NewInventory
 	if err := c.BodyParser(&payload); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -190,7 +218,7 @@ func CreateInventory(c *fiber.Ctx) error {
 		Name:        payload.Name,
 		Description: payload.Description,
 		Tags:        payload.Tags,
-		StoreID:     storeId,
+		StoreID:     uint(storeId),
 	}
 	inserted, err := inventoryCollection.InsertOne(c.Context(), inventory)
 	if err != nil {

@@ -5,7 +5,7 @@ type Inventory struct {
 	Name        string   `json:"name" bson:"name"`
 	Description string   `json:"description" bson:"description,omitempty"`
 	Tags        []string `json:"tags" bson:"tags"`
-	StoreID     string   `json:"storeId" bson:"storeId"`
+	StoreID     uint     `json:"storeId" bson:"storeId"`
 }
 
 type NewInventory struct {

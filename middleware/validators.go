@@ -5,15 +5,23 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"myInventory/helpers"
 	"myInventory/models"
+	"strconv"
 )
 
 func CanAccessStore(c *fiber.Ctx) error {
-	storeId := c.Params("store_id")
-	userId := c.Locals("user").(models.User).ID
-	if !helpers.CanAccessStore(storeId, userId) {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+	_storeId := c.Params("store_id")
+	storeId, err := strconv.Atoi(_storeId)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"success": false,
-			"message": "Unauthorized",
+			"message": "Invalid store ID",
+		})
+	}
+	userId := c.Locals("user").(models.User).ID
+	if err, statusCode := helpers.CanAccessStore(uint(storeId), userId); err != nil {
+		return c.Status(statusCode).JSON(fiber.Map{
+			"success": false,
+			"message": err.Error(),
 		})
 	}
 	return c.Next()
@@ -29,10 +37,10 @@ func CanAccessInventory(c *fiber.Ctx) error {
 			"message": "Invalid inventory ID",
 		})
 	}
-	if !helpers.CanAccessInventory(_id, userId) {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+	if err, statusCode := helpers.CanAccessInventory(_id, userId); err != nil {
+		return c.Status(statusCode).JSON(fiber.Map{
 			"success": false,
-			"message": "Unauthorized",
+			"message": err.Error(),
 		})
 	}
 	c.Locals("inventoryId", _id)
@@ -49,10 +57,10 @@ func CasAccessProduct(c *fiber.Ctx) error {
 			"message": "Invalid product ID",
 		})
 	}
-	if !helpers.CanAccessProduct(_id, userId) {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+	if err, statusCode := helpers.CanAccessProduct(_id, userId); err != nil {
+		return c.Status(statusCode).JSON(fiber.Map{
 			"success": false,
-			"message": "Unauthorized",
+			"message": err.Error(),
 		})
 	}
 	c.Locals("productId", _id)

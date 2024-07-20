@@ -1,8 +1,8 @@
 package helpers
 
 import (
+	"github.com/gofiber/fiber/v2"
 	"myInventory/models"
-	"strconv"
 )
 
 func ExistsStore(storeId string, userId uint) bool {
@@ -13,11 +13,10 @@ func ExistsStore(storeId string, userId uint) bool {
 	return true
 }
 
-func CanAccessStore(storeIdStr string, userId uint) bool {
+func CanAccessStore(storeId uint, userId uint) (error, int) {
 	var store models.Store
-	storeId, _ := strconv.Atoi(storeIdStr)
 	if err := db.Where("id = ?", storeId).Where("user_id=?", userId).First(&store).Error; err != nil {
-		return false
+		return err, fiber.StatusUnauthorized
 	}
-	return true
+	return nil, fiber.StatusOK
 }

@@ -1,0 +1,1 @@
+air build main.go
