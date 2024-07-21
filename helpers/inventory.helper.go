@@ -30,3 +30,13 @@ func GetStoreIdFromInventory(inventoryId primitive.ObjectID) (uint, error) {
 	}
 	return inventory.StoreID, nil
 }
+
+func GetInventoryById(_id primitive.ObjectID) (models.Inventory, error) {
+	var inventory models.Inventory
+	err := inventoryCollection.FindOne(context.TODO(), bson.D{{"_id", _id}}).Decode(&inventory)
+	if err != nil {
+		log.Println(err)
+		return inventory, err
+	}
+	return inventory, nil
+}

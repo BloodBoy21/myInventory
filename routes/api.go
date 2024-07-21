@@ -12,5 +12,6 @@ func ApiRoutes(app fiber.Router) {
 	inventoryRouter := InventoryRoutes(app)
 	ProductRoutes(inventoryRouter)
 	StoreRoutes(app)
+	ReportsRoutes(app)
 
 }
